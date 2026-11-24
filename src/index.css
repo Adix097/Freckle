@@ -1,0 +1,14 @@
+@import "@fontsource-variable/unbounded";
+@import "@fontsource-variable/dm-sans";
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #000000;
+  --color-graphite: #1a1a1a;
+  --color-slate: #2e2e2e;
+  --color-smoke: #757575;
+  --color-ash: #b3b3b3;
+  --color-bone: #f4f4f4;
+  --font-display: "Unbounded Variable", "Arial Black", sans-serif;
+  --font-sans: "DM Sans Variable", system-ui, sans-serif;
+}

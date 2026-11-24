@@ -1,7 +1,27 @@
-node_modules
 dist
-target
+dist-ssr
 .DS_Store
-*.log
+
+# Editor directories and files
 .env
+.idea
+lerna-debug.log*
+*.local
+*.log
+logs
+
+# Logs
+*.njsproj
+node_modules
+npm-debug.log*
+*.ntvs*
+pnpm-debug.log*
+*.sln
 src-tauri/gen
+*.suo
+*.sw?
+target
+.vscode/*
+!.vscode/extensions.json
+yarn-debug.log*
+yarn-error.log*
