@@ -1,3 +1,3 @@
 # Freckle
 
-A personal, local-first music player.
+A personal, local-first music player
