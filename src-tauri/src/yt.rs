@@ -10,7 +10,7 @@ pub struct Track {
 }
 
 async fn ytdlp(args: &[&str]) -> Result<String, String> {
-    let out = Command::new("yt-dlp")
+    let out = Command::new(ytdlp_bin())
         .args(["--js-runtimes", "node", "--no-warnings"])
         .args(args)
         .output()
@@ -53,4 +53,8 @@ pub async fn search(query: String) -> Result<Vec<Track>, String> {
 pub async fn resolve(id: String) -> Result<String, String> {
     let s = ytdlp(&["-f", "bestaudio", "-g", &format!("https://www.youtube.com/watch?v={id}")]).await?;
     Ok(s.lines().next().unwrap_or("").to_string())
+}
+fn ytdlp_bin() -> String {
+    let p = std::env::var("HOME").map(|h| format!("{h}/.local/bin/yt-dlp")).unwrap_or_default();
+    if std::path::Path::new(&p).exists() { p } else { "yt-dlp".into() }
 }

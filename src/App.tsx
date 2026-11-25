@@ -1,38 +1,45 @@
 import { useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-type Track = {
+type Song = {
   id: string;
   title: string;
   artist: string;
+  album: string | null;
   duration: number | null;
+  cover: string | null;
 };
+
+const fmt = (s: number | null) =>
+  s == null ? "" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 export default function App() {
   const [q, setQ] = useState("");
-  const [res, setRes] = useState<Track[]>([]);
+  const [res, setRes] = useState<Song[]>([]);
   const [msg, setMsg] = useState("");
+  const [now, setNow] = useState<string | null>(null);
   const audio = useRef<HTMLAudioElement>(null);
 
   const search = async () => {
     setMsg("Searching…");
     try {
-      setRes(await invoke<Track[]>("search", { query: q }));
+      setRes(await invoke<Song[]>("search_songs", { query: q }));
       setMsg("");
     } catch (e) {
       setMsg(String(e));
     }
   };
 
-  const play = async (t: Track) => {
-    setMsg(`Resolving ${t.title}…`);
+  const play = async (s: Song) => {
+    setMsg(`Resolving ${s.title}…`);
     try {
-      const url = await invoke<string>("resolve", { id: t.id });
+      const url = await invoke<string>("resolve", { id: s.id });
       if (audio.current) {
         audio.current.src = url;
         await audio.current.play();
       }
-      setMsg(`Playing ${t.title}`);
+      setNow(s.id);
+      setMsg("");
     } catch (e) {
       setMsg(String(e));
     }
@@ -61,14 +68,29 @@ export default function App() {
       <p className="text-smoke text-sm mb-4 wrap-break-word">{msg}</p>
       <audio ref={audio} controls className="w-full mb-6" />
       <ul>
-        {res.map((t) => (
-          <li key={t.id}>
+        {res.map((s) => (
+          <li key={s.id}>
             <button
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-graphite"
-              onClick={() => play(t)}
+              className={`w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg hover:bg-graphite ${now === s.id ? "bg-graphite" : ""}`}
+              onClick={() => play(s)}
             >
-              <div className="font-medium">{t.title}</div>
-              <div className="text-smoke text-sm">{t.artist}</div>
+              {s.cover ? (
+                <img
+                  src={s.cover}
+                  alt=""
+                  className="w-12 h-12 rounded-md object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-md bg-slate" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{s.title}</div>
+                <div className="text-smoke text-sm truncate">
+                  {s.artist}
+                  {s.album ? ` · ${s.album}` : ""}
+                </div>
+              </div>
+              <span className="text-smoke text-sm">{fmt(s.duration)}</span>
             </button>
           </li>
         ))}
