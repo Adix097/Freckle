@@ -1,3 +1,4 @@
+mod browse;
 mod db;
 mod yt;
 mod ytm;
@@ -22,7 +23,11 @@ pub fn run() {
             db::create_playlist,
             db::add_to_playlist,
             db::remove_from_playlist,
-            db::delete_playlist
+            db::delete_playlist,
+            db::history_add,
+            db::history_get,
+            browse::new_releases,
+            browse::album_tracks
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

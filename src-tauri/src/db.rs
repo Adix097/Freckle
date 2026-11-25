@@ -44,7 +44,9 @@ pub fn open(path: std::path::PathBuf) -> rusqlite::Result<Db> {
            playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
            song_id TEXT NOT NULL REFERENCES songs(id),
            pos INTEGER NOT NULL,
-           PRIMARY KEY(playlist_id, song_id));",
+           PRIMARY KEY(playlist_id, song_id));
+         CREATE TABLE IF NOT EXISTS history(
+           song_id TEXT PRIMARY KEY REFERENCES songs(id), at INTEGER NOT NULL);",
     )?;
     Ok(Db(Mutex::new(c)))
 }
@@ -160,4 +162,33 @@ pub fn delete_playlist(db: State<Db>, id: i64) -> Result<(), String> {
     c.execute("DELETE FROM playlists WHERE id=?1", params![id])
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn history_add(db: State<Db>, song: Song) -> Result<(), String> {
+    let c = db.0.lock().unwrap();
+    (|| -> rusqlite::Result<()> {
+        upsert(&c, &song)?;
+        c.execute(
+            "INSERT INTO history(song_id,at) VALUES(?1,strftime('%s','now'))
+             ON CONFLICT(song_id) DO UPDATE SET at=excluded.at",
+            params![song.id],
+        )?;
+        Ok(())
+    })()
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn history_get(db: State<Db>, limit: u32) -> Result<Vec<Song>, String> {
+    let c = db.0.lock().unwrap();
+    (|| -> rusqlite::Result<Vec<Song>> {
+        let mut st = c.prepare(&format!(
+            "SELECT {COLS} FROM history h JOIN songs s ON s.id=h.song_id
+             ORDER BY h.at DESC, h.rowid DESC LIMIT ?1"
+        ))?;
+        let v = st.query_map(params![limit], row)?.collect::<Result<Vec<_>, _>>()?;
+        Ok(v)
+    })()
+    .map_err(|e| e.to_string())
 }
