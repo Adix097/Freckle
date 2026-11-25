@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import type { Song } from "./types";
+import { useDiscovery } from "./discovery";
 
 const audio = new Audio();
 audio.volume = 0.7;
@@ -42,6 +43,9 @@ export const usePlayer = create<Player>((set, get) => {
       audio.src = url;
       await audio.play();
       set({ loading: false });
+      invoke("history_add", { song })
+        .then(() => useDiscovery.getState().loadRecent())
+        .catch(() => {});
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: song.title,
