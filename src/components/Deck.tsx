@@ -1,3 +1,4 @@
+import Heart from "./Heart";
 import { usePlayer } from "../store";
 import { fmt } from "../format";
 import Seek from "./Seek";
@@ -31,6 +32,7 @@ export default function Deck() {
                 : (song?.artist ?? "Search for a song to start")}
           </div>
         </div>
+        {song && <Heart song={song} />}
       </div>
 
       <div className="flex flex-col items-center gap-1">
