@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "freckle",
-        "width": 800,
-        "height": 600
+        "title": "Freckle",
+        "width": 1280,
+        "height": 800
       }
     ],
     "security": {
