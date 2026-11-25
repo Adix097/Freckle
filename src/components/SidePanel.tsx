@@ -1,3 +1,4 @@
+import LyricsPanel from "./LyricsPanel";
 import { useState } from "react";
 import { usePlayer } from "../store";
 import SongRow from "./SongRow";
@@ -21,9 +22,7 @@ export default function SidePanel() {
         ))}
       </div>
       {tab === "lyrics" ? (
-        <p className="p-3 text-sm text-smoke">
-          Lyrics arrive in a later branch.
-        </p>
+        <LyricsPanel />
       ) : !now ? (
         <p className="p-3 text-sm text-smoke">
           The queue is empty. Play a song to fill it.
