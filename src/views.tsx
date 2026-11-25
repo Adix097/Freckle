@@ -124,9 +124,19 @@ export function Dig() {
           </div>
         </>
       ) : (
-        <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
-          Results
-        </h2>
+        <div className="mb-3 flex items-center gap-3">
+          <button
+            onClick={() =>
+              useSearch.setState({ query: "", results: [], error: null })
+            }
+            className="text-sm text-smoke hover:text-bone"
+          >
+            ‹ Genres
+          </button>
+          <h2 className="font-display text-lg font-semibold tracking-tight">
+            Results
+          </h2>
+        </div>
       )}
       {loading && <p className="text-smoke">Searching…</p>}
       {error && <p className="wrap-break-word text-smoke">{error}</p>}
