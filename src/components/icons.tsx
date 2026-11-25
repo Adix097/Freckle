@@ -31,3 +31,24 @@ export const SearchIcon = mk(
 export const VolumeIcon = mk(
   <path d="M11 5L6 9H2v6h4l5 4zM16 8a5 5 0 0 1 0 8" />,
 );
+export const PlusIcon = mk(<path d="M12 5v14M5 12h14" />);
+export const HeartIcon = ({
+  className = "size-5",
+  filled = false,
+}: {
+  className?: string;
+  filled?: boolean;
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z" />
+  </svg>
+);

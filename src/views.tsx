@@ -37,6 +37,7 @@ export function Dig() {
         <SongRow
           key={s.id}
           song={s}
+          actions
           active={s.id === current}
           onClick={() => play(s, results)}
         />
