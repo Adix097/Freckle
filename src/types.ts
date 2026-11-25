@@ -7,4 +7,12 @@ export type Song = {
   cover: string | null;
 };
 
+export type Release = {
+  browseId: string;
+  title: string;
+  artist: string;
+  kind: string;
+  cover: string | null;
+};
+
 export type View = "home" | "dig" | "library" | "echo";
