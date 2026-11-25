@@ -15,4 +15,9 @@ export type Release = {
   cover: string | null;
 };
 
+export type Lyrics = {
+  synced: { t: number; text: string }[] | null;
+  plain: string | null;
+};
+
 export type View = "home" | "dig" | "library" | "echo";

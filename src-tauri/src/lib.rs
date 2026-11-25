@@ -1,3 +1,4 @@
+mod lyrics;
 mod browse;
 mod db;
 mod yt;
@@ -27,7 +28,8 @@ pub fn run() {
             db::history_add,
             db::history_get,
             browse::new_releases,
-            browse::album_tracks
+            browse::album_tracks,
+            lyrics::get_lyrics
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
