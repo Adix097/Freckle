@@ -8,6 +8,7 @@ mod ytm;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_player::init())
         .setup(|app| {
             use tauri::Manager;
             let dir = app.path().app_data_dir()?;
