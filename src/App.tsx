@@ -1,3 +1,4 @@
+import { useDiscovery } from "./discovery";
 import { useEffect, useState } from "react";
 import type { Release, View } from "./types";
 import { useAuth } from "./auth";
@@ -21,6 +22,8 @@ function Shell() {
   };
 
   useEffect(() => {
+    useLibrary.setState({ liked: [], likedIds: new Set(), playlists: [] });
+    useDiscovery.setState({ recent: [] });
     useLibrary.getState().load();
   }, []);
 

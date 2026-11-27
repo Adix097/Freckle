@@ -43,9 +43,7 @@ export const usePlayer = create<Player>((set, get) => {
       audio.src = url;
       await audio.play();
       set({ loading: false });
-      invoke("history_add", { song })
-        .then(() => useDiscovery.getState().loadRecent())
-        .catch(() => {});
+      useDiscovery.getState().record(song);
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: song.title,

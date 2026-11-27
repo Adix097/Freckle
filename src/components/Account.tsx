@@ -88,7 +88,7 @@ export default function Account() {
             {busy ? "Please wait…" : "Update password"}
           </button>
         </form>
-        <div className="mt-5 flex gap-2">
+<div className="mt-5 flex gap-2">
           <button
             onClick={signOut}
             className="flex-1 rounded-full border border-slate py-2.5 text-ash hover:text-bone"

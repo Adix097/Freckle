@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { supabase } from "./supabase";
+import { useAuth } from "./auth";
 import type { Release, Song } from "./types";
 
 type Disc = {
@@ -9,6 +11,7 @@ type Disc = {
   releasesError: string | null;
   loadReleases: () => Promise<void>;
   loadRecent: () => Promise<void>;
+  record: (song: Song) => Promise<void>;
 };
 
 export const useDiscovery = create<Disc>((set, get) => ({
@@ -29,10 +32,31 @@ export const useDiscovery = create<Disc>((set, get) => ({
     }
   },
   loadRecent: async () => {
-    try {
-      set({ recent: await invoke<Song[]>("history_get", { limit: 12 }) });
-    } catch {
-      // ignore
-    }
+    const { data, error } = await supabase
+      .from("history")
+      .select("played_at, songs(*)")
+      .order("played_at", { ascending: false })
+      .limit(12);
+    if (error || !data) return;
+    set({
+      recent: (data as unknown as { songs: Song | null }[])
+        .map((r) => r.songs)
+        .filter((s): s is Song => !!s),
+    });
+  },
+  record: async (song) => {
+    const id = useAuth.getState().session?.user.id;
+    if (!id) return;
+    const a = await supabase
+      .from("songs")
+      .upsert(song, { onConflict: "id", ignoreDuplicates: true });
+    if (a.error) return;
+    await supabase
+      .from("history")
+      .upsert(
+        { user_id: id, song_id: song.id, played_at: new Date().toISOString() },
+        { onConflict: "user_id,song_id" },
+      );
+    await get().loadRecent();
   },
 }));
