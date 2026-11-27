@@ -17,7 +17,6 @@ npm-debug.log*
 *.ntvs*
 pnpm-debug.log*
 *.sln
-src-tauri/gen
 *.suo
 *.sw?
 target
