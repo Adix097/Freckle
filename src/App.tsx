@@ -1,5 +1,7 @@
+import { useDiscovery } from "./discovery";
 import { useEffect, useState } from "react";
 import type { Release, View } from "./types";
+import { useAuth } from "./auth";
 import { useLibrary } from "./library";
 import TopBar from "./components/TopBar";
 import SidePanel from "./components/SidePanel";
@@ -7,9 +9,11 @@ import Deck from "./components/Deck";
 import LibraryView from "./components/LibraryView";
 import AlbumView from "./components/AlbumView";
 import Overlay from "./components/Overlay";
+import AuthScreen from "./components/AuthScreen";
+import Account from "./components/Account";
 import { Dig, Home, Placeholder } from "./views";
 
-export default function App() {
+function Shell() {
   const [view, setView] = useState<View>("home");
   const [album, setAlbum] = useState<Release | null>(null);
   const go = (v: View) => {
@@ -18,6 +22,8 @@ export default function App() {
   };
 
   useEffect(() => {
+    useLibrary.setState({ liked: [], likedIds: new Set(), playlists: [] });
+    useDiscovery.setState({ recent: [] });
     useLibrary.getState().load();
   }, []);
 
@@ -43,6 +49,17 @@ export default function App() {
       </div>
       <Deck />
       <Overlay />
+      <Account />
     </div>
   );
+}
+
+export default function App() {
+  const { session, ready, locked, init } = useAuth();
+  useEffect(() => {
+    init();
+  }, [init]);
+  if (!ready) return <div className="h-screen bg-ink" />;
+  if (!session || locked) return <AuthScreen />;
+  return <Shell />;
 }

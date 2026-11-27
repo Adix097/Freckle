@@ -1,3 +1,4 @@
+import { AvatarButton } from "./Account";
 import { useSearch } from "../store";
 import type { View } from "../types";
 import { SearchIcon } from "./icons";
@@ -44,9 +45,7 @@ export default function TopBar({ view, setView }: Props) {
           className="w-full bg-transparent text-sm text-bone outline-none placeholder:text-smoke"
         />
       </label>
-      <div className="grid size-9 place-items-center rounded-full bg-bone font-bold text-ink">
-        A
-      </div>
+      <AvatarButton />
     </header>
   );
 }

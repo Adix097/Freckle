@@ -38,7 +38,7 @@ export default function LibraryView() {
   const { liked, playlists, openNew, deletePlaylist, removeFrom } =
     useLibrary();
   const { queue, index, play } = usePlayer();
-  const [open, setOpen] = useState<"liked" | number | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const current = queue[index]?.id;
 
   if (open !== null) {
