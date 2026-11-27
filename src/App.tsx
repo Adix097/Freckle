@@ -1,3 +1,4 @@
+import Spike from "./Spike";
 import { useDiscovery } from "./discovery";
 import { useEffect, useState } from "react";
 import type { Release, View } from "./types";
@@ -50,6 +51,7 @@ function Shell() {
       <Deck />
       <Overlay />
       <Account />
+      <Spike />
     </div>
   );
 }
