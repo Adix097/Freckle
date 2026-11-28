@@ -1,11 +1,14 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { Song } from "./types";
 import { useDiscovery } from "./discovery";
+import { recordMany, type Played } from "./history";
+import type { Song } from "./types";
 
-const audio = new Audio();
-audio.volume = 0.7;
-let token = 0;
+const isAndroid = /Android/i.test(navigator.userAgent);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const native = (cmd: string, args?: object) =>
+  invoke<any>("plugin:player|call", { cmd, args });
 
 type Player = {
   queue: Song[];
@@ -23,9 +26,21 @@ type Player = {
   prev: () => void;
   seek: (frac: number) => void;
   setVolume: (v: number) => void;
+  stop: () => void;
 };
 
-export const usePlayer = create<Player>((set, get) => {
+type Set = (p: Partial<Player> | ((s: Player) => Partial<Player>)) => void;
+type Get = () => Player;
+type Actions = Pick<
+  Player,
+  "play" | "jump" | "toggle" | "next" | "prev" | "seek" | "setVolume" | "stop"
+>;
+
+function desktop(set: Set, get: Get): Actions {
+  const audio = new Audio();
+  audio.volume = 0.7;
+  let token = 0;
+
   const load = async (i: number) => {
     const song = get().queue[i];
     if (!song) return;
@@ -74,14 +89,6 @@ export const usePlayer = create<Player>((set, get) => {
   }
 
   return {
-    queue: [],
-    index: 0,
-    playing: false,
-    loading: false,
-    error: null,
-    time: 0,
-    duration: 0,
-    volume: 0.7,
     play: (song, list) => {
       const q = list ?? [song];
       set({ queue: q });
@@ -105,11 +112,8 @@ export const usePlayer = create<Player>((set, get) => {
     },
     prev: () => {
       const { index } = get();
-      if (audio.currentTime > 3 || index === 0) {
-        audio.currentTime = 0;
-      } else {
-        load(index - 1);
-      }
+      if (audio.currentTime > 3 || index === 0) audio.currentTime = 0;
+      else load(index - 1);
     },
     seek: (frac) => {
       const d = get().duration || audio.duration || 0;
@@ -120,8 +124,201 @@ export const usePlayer = create<Player>((set, get) => {
       audio.volume = v;
       set({ volume: v });
     },
+    stop: () => {
+      token++;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      set({
+        queue: [],
+        index: 0,
+        playing: false,
+        loading: false,
+        error: null,
+        time: 0,
+        duration: 0,
+      });
+    },
   };
-});
+}
+
+function android(set: Set, get: Get): Actions {
+  let hold = 0;
+  let draining = false;
+  const lock = (ms = 800) => {
+    hold = Date.now() + ms;
+  };
+  const fail = (e: unknown) => set({ error: String(e), loading: false });
+  const payload = (q: Song[]) =>
+    JSON.stringify(
+      q.map((s) => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist,
+        album: s.album,
+        duration: s.duration,
+        cover: s.cover,
+      })),
+    );
+
+  const poll = async () => {
+    if (document.hidden) return;
+    try {
+      const s = await native("state");
+      if (Date.now() < hold || !s.connected || !s.count) return;
+      const { queue } = get();
+      if (!queue.length) return;
+      const index = Math.min(s.index, queue.length - 1);
+      set({
+        index,
+        playing: !!s.playWhenReady && (s.state === 2 || s.state === 3),
+        loading: s.state === 2,
+        time: s.position / 1000,
+        duration:
+          s.duration > 0 ? s.duration / 1000 : (queue[index]?.duration ?? 0),
+        error: s.error || null,
+      });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const drain = async () => {
+    if (draining) return;
+    draining = true;
+    try {
+      const r = await native("peekHistory");
+      const list = JSON.parse(r.items) as Played[];
+      if (list.length && (await recordMany(list))) {
+        await native("ackHistory", { upTo: Math.max(...list.map((x) => x.t)) });
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      draining = false;
+    }
+  };
+
+  (async () => {
+    try {
+      const snap = await native("snapshot");
+      const list = JSON.parse(snap.items) as Song[];
+      if (list.length) {
+        set({
+          queue: list,
+          index: snap.index,
+          time: snap.position / 1000,
+          duration: list[snap.index]?.duration ?? 0,
+          playing: !!snap.playing,
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+    setInterval(poll, 500);
+    setInterval(drain, 2000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        poll();
+        drain();
+      }
+    });
+  })();
+
+  return {
+    play: (song, list) => {
+      const q = list ?? [song];
+      const i = Math.max(
+        0,
+        q.findIndex((s) => s.id === song.id),
+      );
+      lock();
+      set({
+        queue: q,
+        index: i,
+        loading: true,
+        error: null,
+        time: 0,
+        duration: song.duration ?? 0,
+        playing: true,
+      });
+      native("setQueue", {
+        items: payload(q),
+        index: i,
+        play: true,
+        position: 0,
+      }).catch(fail);
+    },
+    jump: (i) => {
+      lock();
+      set((s) => ({
+        index: i,
+        loading: true,
+        error: null,
+        time: 0,
+        duration: s.queue[i]?.duration ?? 0,
+        playing: true,
+      }));
+      native("jump", { index: i }).catch(fail);
+    },
+    toggle: () => {
+      lock();
+      set((s) => ({ playing: !s.playing }));
+      native("toggle").catch(fail);
+    },
+    next: () => {
+      lock();
+      set((s) => ({
+        index: Math.min(s.index + 1, s.queue.length - 1),
+        time: 0,
+        loading: true,
+        playing: true,
+      }));
+      native("next").catch(fail);
+    },
+    prev: () => {
+      lock();
+      set((s) =>
+        s.time > 3 || s.index === 0
+          ? { time: 0 }
+          : { index: s.index - 1, time: 0, loading: true },
+      );
+      native("prev").catch(fail);
+    },
+    seek: (frac) => {
+      lock();
+      const d = get().duration;
+      set({ time: frac * d });
+      native("seek", { ms: Math.round(frac * d * 1000) }).catch(fail);
+    },
+    setVolume: (v) => set({ volume: v }),
+    stop: () => {
+      lock();
+      set({
+        queue: [],
+        index: 0,
+        playing: false,
+        loading: false,
+        error: null,
+        time: 0,
+        duration: 0,
+      });
+      native("stop").catch(() => {});
+    },
+  };
+}
+
+export const usePlayer = create<Player>((set, get) => ({
+  queue: [],
+  index: 0,
+  playing: false,
+  loading: false,
+  error: null,
+  time: 0,
+  duration: 0,
+  volume: 0.7,
+  ...(isAndroid ? android(set, get) : desktop(set, get)),
+}));
 
 type Search = {
   query: string;
