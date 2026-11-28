@@ -1,4 +1,4 @@
-import Spike from "./Spike";
+import { usePlayer } from "./store";
 import { useDiscovery } from "./discovery";
 import { useEffect, useState } from "react";
 import type { Release, View } from "./types";
@@ -15,6 +15,7 @@ import Account from "./components/Account";
 import { Dig, Home, Placeholder } from "./views";
 
 function Shell() {
+  useEffect(() => () => { usePlayer.getState().stop(); }, []);
   const [view, setView] = useState<View>("home");
   const [album, setAlbum] = useState<Release | null>(null);
   const go = (v: View) => {
@@ -51,7 +52,6 @@ function Shell() {
       <Deck />
       <Overlay />
       <Account />
-      <Spike />
     </div>
   );
 }
